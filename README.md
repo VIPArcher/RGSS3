@@ -13,4 +13,5 @@ VIPArcher 的 RGSS 脚本仓库。
 
 ------
 
-> * [![顺便安利一下授权素材推广计划](http://ww3.sinaimg.cn/large/c5e47d21gw1eh6kvhzoy2j20b402sdg5.jpg)](http://rmproject.lofter.com/hello)
+[![RPG制作大师授权素材推广计划](http://ww3.sinaimg.cn/large/c5e47d21gw1eh6kvhzoy2j20b402sdg5.jpg)](http://rmproject.lofter.com/hello)
+> * [顺便安利一下RPG制作大师授权素材推广计划](http://rmproject.lofter.com/hello)
