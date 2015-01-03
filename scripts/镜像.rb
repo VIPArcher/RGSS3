@@ -70,7 +70,7 @@ class Sprite_Reflect < Sprite_Character
   # ● 角色/事件站在区域ID为Reflect_ID时显示镜像
   #--------------------------------------------------------------------------
   def region_id?
-    @character.region_id == VIPArcher::Reflect_ID || VIPArcher::HighReflect_ID
+    @character.region_id == VIPArcher::Reflect_ID | VIPArcher::HighReflect_ID
   end
   #--------------------------------------------------------------------------
   # ● 更新源矩形
