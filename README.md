@@ -4,6 +4,8 @@ VIPArcher 的 RGSS 脚本仓库。
 
 **脚本使用规约（点击文字显示详细内容）：**
 
+------
+
 > * [基本规则](http://rmtemp.lofter.com/post/3e26fe_156e50a)
 > * [需要署名](http://rmtemp.lofter.com/post/3e26fe_156e50f)
 > * [不需要报告](http://rmtemp.lofter.com/post/3e26fe_156f16f)
