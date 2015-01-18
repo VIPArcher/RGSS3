@@ -1,4 +1,4 @@
-#encoding:utf-8
+﻿#encoding:utf-8
 #==============================================================================
 # ■ 技能物品说明增强 蓝本：wyongcan
 # 修改 ：VIPArcher
@@ -26,7 +26,7 @@ class << DataManager
     VIPArcher::Equipplus.equiphelpready
   end
 end
-module VIPArcher;end
+module VIPArcher end
 module VIPArcher::Equipplus
   TIME = 90 #帮助窗口自动出现的时间（单位帧
   Font_Name = Font.default_name # 推荐"微软雅黑"

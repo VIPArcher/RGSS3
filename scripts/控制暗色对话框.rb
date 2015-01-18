@@ -10,7 +10,7 @@ $VIPArcherScript ||= {};$VIPArcherScript[:message_back] = 20141117
 #==============================================================================
 # ● 设定区
 #==============================================================================
-module VIPArcher;end
+module VIPArcher end
 module VIPArcher::MESSAGE
   AFFIX_VER = 1        #控制文件后缀名的变量ID
   BACK_NAME = "Message"#背景图片名字的前缀
