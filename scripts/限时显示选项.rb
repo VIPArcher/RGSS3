@@ -14,9 +14,7 @@ class Window_ChoiceList < Window_Command
   #--------------------------------------------------------------------------
   alias timer_call_cancel_handler call_cancel_handler
   def call_cancel_handler
-    timer_call_cancel_handler
-    deactivate
-    $game_timer.stop
+    timer_call_cancel_handler ; deactivate ; $game_timer.stop
   end
   #--------------------------------------------------------------------------
   # ● 更新画面

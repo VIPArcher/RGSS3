@@ -7,7 +7,6 @@ $VIPArcherScript ||= {};$VIPArcherScript[:textcolor] = 20141012
 #--------------------------------------------------------------------------------
 module VIPArcher
   Text_Color = { #<-这行不能删除
-  
    #颜色编号  #颜色(R  , G  , B [,A ]),
     32 => Color.new(0  , 0  , 255,255),
     33 => Color.new(0  , 255, 0      ),

@@ -4,8 +4,8 @@
 #  -- 本脚本来自 http://rm.66rpg.com 使用或转载请保留以上信息。
 #==============================================================================
 # 使用说明：
-#   如果远景图的文件名中带有 fix 则该远景图就会跟随地图卷动
-#   也就是相当于固定在地图上了。
+#   如果远景图的文件名中带有 fix 则该远景图就会
+#   跟随地图卷动,也就是相当于固定在地图上了。
 #==============================================================================
 $VIPArcherScript ||= {};$VIPArcherScript[:fix_parallax] = 20150119
 #------------------------------------------------------------------------------
@@ -13,9 +13,9 @@ class Spriteset_Map
   #--------------------------------------------------------------------------
   # ● 更新远景图
   #--------------------------------------------------------------------------
-  alias xy_update_parallax update_parallax
+  alias fix_update_parallax update_parallax
   def update_parallax
-    xy_update_parallax
+    fix_update_parallax
     return unless @parallax_name.include?("fix")
     @parallax.ox,@parallax.oy = @tilemap.ox,@tilemap.oy
   end
