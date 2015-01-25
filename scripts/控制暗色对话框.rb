@@ -15,7 +15,7 @@ module VIPArcher::MESSAGE
   AFFIX_VER = 1        #控制文件后缀名的变量ID
   BACK_NAME = "Message"#背景图片名字的前缀
 end
-#--------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 class Window_Message < Window_Base
   include VIPArcher::MESSAGE
   #--------------------------------------------------------------------------
@@ -29,6 +29,7 @@ class Window_Message < Window_Base
     rescue
     vip_20141117_create_back_bitmap
     end
+    @game_variables = $game_variables[AFFIX_VER]
   end
   #--------------------------------------------------------------------------
   # ● 更新背景精灵
@@ -43,10 +44,19 @@ class Window_Message < Window_Base
   #--------------------------------------------------------------------------
   alias vip_20141117_update_background update_background
   def update_background
+    p 1
     dispose_back_bitmap
     dispose_back_sprite
     create_back_bitmap
     create_back_sprite
     vip_20141117_update_background
+  end
+  #--------------------------------------------------------------------------
+  # ● 更新画面
+  #--------------------------------------------------------------------------
+  alias vip_20141117_update update
+  def update
+    vip_20141117_update
+    update_background if @game_variables != $game_variables[AFFIX_VER]
   end
 end
