@@ -44,7 +44,6 @@ class Window_Message < Window_Base
   #--------------------------------------------------------------------------
   alias vip_20141117_update_background update_background
   def update_background
-    p 1
     dispose_back_bitmap
     dispose_back_sprite
     create_back_bitmap
