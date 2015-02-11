@@ -5,66 +5,58 @@
 # 蓝本 杂兵天下的VA移植版
 # 改进 By：VIPArcher
 #  -- 本脚本来自 http://rm.66rpg.com 使用或转载请保留以上信息。
-#
 #==============================================================================
-# 就是在物品画面的右上角放了一个显示负重的窗口
-# 更新了代码，取消的原来的计算每个队员的负重然后累加的模式 2014-12-10 
-# 增加了商店界面的负重显示     2014-9-3 
-#==============================================================================
-#
 # 物品备注<load N> 则该物品占用 N 点负重
 # load也可以写成「负重」或「負重」#注：没有“「」”
 # 不写的话默认为 Default_Load
-# 更改当前负重 current_load(x[,assign])
-# 其中 x 为数值可以为负数,assign 为 true 时当前负重直接赋值为x（可省略）
-# 例如：current_load(10,true) 当前负重直接赋值为10
-# 默认给物品增加一行说明.说明内容是物品的重量.
-# 但默认帮助窗口一共只能显示2行内容.
-# 因此你在数据库设置武器、护甲说明的时候.
-# 如果设置了2行内容.那么这新增加的第3行将无法显示出来.
-#
+# 更改当前负重可以对 $game_party.current_load 进行加，减，赋值
+# 例如：$game_party.current_load += 1 #当前物品总重量加 1
+# 默认给物品增加一行说明.说明内容是物品的重量. 但默认帮助窗口一共只能显示2行内容.
+# 因此你在设置帮助说明的时候. 如果设置了2行内容. 那么这新增加的第3行将无法显示出来.
 #==============================================================================
 $VIPArcherScript ||= {};$VIPArcherScript[:load] = 20140919
+#-------------------------------------------------------------------------------
+module  VIPArcher end
 #==============================================================================
 # ★ 设定部分 ★
 #==============================================================================
-module  VIPArcher end
 module  VIPArcher::Load
-  Default_Load = 1    #物品的默认负重
-  Width = 150         #负重信息窗口宽度
-  Load_Name = "负重:" #负重前显示的文字
-  Load_Var = 0        #作为队伍负重上限的变量ID，为0禁用变量作为负重上限，变成
-                      #累计每个角色的负重能力来计算负重上限
-  Load_Eval = "((mhp + mmp) * @level / agi) * [hp_rate,0.5].max"
+  Default_Load = 1    # 物品的默认负重
+  Width = 150         # 负重信息窗口宽度
+  Load_Name = "负重:" # 负重前显示的文字
+  Load_Var = 0        # 作为队伍负重上限的变量ID，为0禁用变量作为负重上限，
+                      # 计算方式变成累计每个角色的负重能力来计算负重上限。
+  Load_Eval = "((mhp + mmp) / agi) * [hp_rate,0.5].max"
   # 每个角色的负重计算公式（eval）
-  Stop_SW = false       #true 使用 / false 不使用
+  
+  Stop_SW = false       # true 使用 / false 不使用
   # 事件中调用增减道具/武器/防具时，如果会导致超过负重上限，是否执行中断事件处理
   # 推荐不使用，因为新加的功能就有一个是当超过负重时限制角色移动，开启这个
   # 的话这个限制移动就无效了的说·3·
- 
-  Movable =  true       #true 使用 / false 不使用
+
+  Movable =  true       # true 使用 / false 不使用
   # 满负重时降低移动速度（不使用时禁止移动连事件都无法启动，只能丢弃/使用物品）
- 
-  Move_Speed = 2 # 满负重时的移动速度
- 
+
+  Move_Speed = 2 # 满负重时的移动速度降低量
+
   # 负重超过上限时的提示内容
-  Message = "\\i[4]负重超过可承受的范围，\n移动将变得\\c[10]十分艰难！\\c[0]
-丢些没用的东西掉吧。"
- 
-  # 按X键（A键）是否可以丢弃道具
-  # 如果你另外使用了丢弃道具的脚本请关闭
-  Lose_SW = true       #true 使用 / false 不使用
- 
-  # 是否在帮助窗口内自动添加负重信息
+  Message = "负重超过承受范围，移动将变得\ec[10]【十分艰难！】\\c[0]" +
+            "\n\ei[4]丢弃些没用的东西吧。"
+
+  Lose_SW = true       # true 使用 / false 不使用
+                       # 按X键（A键）是否可以丢弃道具
+                       # 如果你另外使用了丢弃道具的脚本请关闭
+
   Help_SW = true       #true 使用 / false 不使用
- 
-  # 装备在身上的装备是否算入负重
+  # 是否在帮助窗口内自动添加负重信息
+
   Equip_SW = true      #true 计算 / false 不计算
-  #         "★★★★★★ 注意 ★★★★★★"
+  # 装备在身上的装备是否算入负重
+  #        "★★★★★★ 注意 ★★★★★★"
   # 如果你的角色初始装备有占负重并且开启上面的功能，那么你必须
   # 在游戏一开始时为当前负重赋值（自己算到底有多少负重·3·）
   # 当有新队员加入队伍并且也带有负重的装备那么你也需要为当前负重加上对应的重量，
-  # 例如：事件脚本运行 current_load(10) 就是加上10的当前负重
+  # 例如：$game_party.current_load += 10 就是加上10的当前负重
 end
 #==============================================================================
 # ☆ 设定结束 ☆
@@ -77,16 +69,16 @@ class RPG::BaseItem
   def load
     return unless self.is_a?(RPG::Item) || self.is_a?(RPG::EquipItem)
     return $1.to_i if @note =~ /<(?:load|负重|負重)\s*(\d+)>/i
-    return Default_Load
+    Default_Load
   end
   #--------------------------------------------------------------------------
   # ● 新增负重帮助内容
   #--------------------------------------------------------------------------
   def description
     if Help_SW && load && load != 0
-      return @description + "\n\\}重量:#{load}"
+      @description + "\n\e}重量:#{load}\e{"
     else
-      return @description
+      @description
     end
   end unless $VIPArcherScript[:help_ex]
 end
@@ -98,8 +90,9 @@ class Window_Load < Window_Base
   #--------------------------------------------------------------------------
   # ● 初始化对象
   #--------------------------------------------------------------------------
-  def initialize
+  def initialize(viewport)
     super(Graphics.width - window_width, 72, window_width, fitting_height(1))
+    self.viewport = @viewport
     refresh
   end
   #--------------------------------------------------------------------------
@@ -114,21 +107,12 @@ class Window_Load < Window_Base
   def refresh
     contents.clear
     contents.font.size - 4
-    draw_text(0, 0, window_width - 64, 24,load_name,0)
+    change_color(system_color)
+    draw_text(0, 0, window_width - 64, 24,Load_Name,0)
+    change_color($game_party.load_max? ? power_down_color : normal_color)
+    weight = "#{$game_party.current_load}/#{$game_party.total_load}"
     draw_text(0, 0, window_width - 24, 24, weight,2)
     @temp_load = $game_party.current_load
-  end
-  #--------------------------------------------------------------------------
-  # ● 获取当前负重信息
-  #--------------------------------------------------------------------------
-  def weight
-    "#{$game_party.current_load}/#{$game_party.total_load}"
-  end
-  #--------------------------------------------------------------------------
-  # ● 获取负重前显示文字
-  #--------------------------------------------------------------------------
-  def load_name
-    Load_Name
   end
   #--------------------------------------------------------------------------
   # ● 更新画面
@@ -171,16 +155,7 @@ class Scene_Item < Scene_ItemBase
   alias load_start start
   def start
     load_start
-    @load_window = Window_Load.new
-    @load_window.viewport = @viewport
-  end
-  #--------------------------------------------------------------------------
-  # ● 结束处理
-  #--------------------------------------------------------------------------
-  alias load_terminate terminate
-  def terminate
-    load_terminate
-    @load_window.dispose
+    @load_window = Window_Load.new(@viewport)
   end
   #--------------------------------------------------------------------------
   # ● 更新画面
@@ -192,15 +167,14 @@ class Scene_Item < Scene_ItemBase
     #--------------------------------------------------------------------------
     if Input.trigger?(Input::X) && Lose_SW
       item = @item_window.item
-      if item.is_a?(RPG::Item) && item.key_item? 
+      if item.is_a?(RPG::Item) && item.key_item? || item.nil?
         Sound.play_buzzer
       else
         Sound.play_cancel
         $game_party.lose_item(item, 1)
         @item_window.refresh
-      end unless item == nil
+      end
     end
-    @load_window.update
     load_update
   end
 end
@@ -225,9 +199,10 @@ class Window_ShopNumber < Window_Selectable
     width = contents_width - 8
     cx = text_size(@currency_unit).width
     change_color(system_color)
-    draw_text(4, y + 60, width, line_height, "#{Load_Name}")
+    draw_text(4, y + 60, width, line_height, Load_Name)
     change_color(normal_color)
     wt = "#{weight} / #{$game_party.total_load}"
+    change_color(power_down_color) if weight > $game_party.total_load
     draw_text(4, y + 60, width, line_height, wt, 2)
   end
 end
@@ -248,9 +223,10 @@ class Window_ShopStatus < Window_Base
   def draw_weight_occupy(x, y)
     rect = Rect.new(x, y, contents.width - 4 - x, line_height)
     change_color(system_color)
-    draw_text(rect, "#{Load_Name}", 3)
+    draw_text(rect, Load_Name, 3)
     change_color(normal_color)
     weight = "#{$game_party.current_load}/#{$game_party.total_load}"
+    change_color(power_down_color) if $game_party.load_max?
     draw_text(rect, weight, 2)
     @temp_load = $game_party.current_load
   end
@@ -295,7 +271,7 @@ class Game_Party < Game_Unit
   def gain_item(item, n, include_equip = false)
     return if item.nil?
     load_gain_item(item, n, include_equip)
-    @current_load += item.load * n if !@load_trade_item
+    @current_load += item.load * n unless @load_trade_item
   end
 end
 #-------------------------------------------------------------------------------
@@ -318,7 +294,7 @@ class Game_Actor < Game_Battler
   # ● 获取角色的负重上限
   #--------------------------------------------------------------------------
   def load
-    eval(Load_Eval).to_i
+    eval(Load_Eval).to_i rescue msgbox "请检查负重能力公式是否正确"
   end
 end
 #==============================================================================
@@ -332,7 +308,7 @@ class Game_Interpreter
   alias load_command_126 command_126
   def command_126
     n = operate_value(@params[1], @params[2], @params[3])
-    return command_115 if check_load(@params[0], 0, n) && Stop_SW
+    return command_115 if check_load($data_items[@params[0]], n) && Stop_SW
     load_command_126
   end
   #--------------------------------------------------------------------------
@@ -341,7 +317,7 @@ class Game_Interpreter
   alias load_command_127 command_127
   def command_127
     n = operate_value(@params[1], @params[2], @params[3])
-    return command_115 if check_load(@params[0], 1, n) &&  Stop_SW
+    return command_115 if check_load($data_weapons[@params[0]], n) && Stop_SW
     load_command_127
   end
   #--------------------------------------------------------------------------
@@ -350,33 +326,18 @@ class Game_Interpreter
   alias load_command_128 command_128
   def command_128
     n = operate_value(@params[1], @params[2], @params[3])
-    return command_115 if check_load(@params[0], 2, n) && Stop_SW
+    return command_115 if check_load($data_armors[@params[0]], n) && Stop_SW
     load_command_128
   end
   #--------------------------------------------------------------------------
   # ● 增减物品超重时提示
   #--------------------------------------------------------------------------
-  def check_load(item_id, type, n)
-    case type
-    when 0; item = $data_items[item_id]
-    when 1; item = $data_weapons[item_id]
-    when 2; item = $data_armors[item_id]
-    end
+  def check_load(item, n)
     if (((item.load * n) + $game_party.current_load) > $game_party.total_load)
       $game_message.texts.push("#{Message}") if $game_message.visible != true
       $game_message.visible = true
     end
-    return (((item.load * n) + $game_party.current_load) > $game_party.total_load)
-  end
-  #--------------------------------------------------------------------------
-  # ● 更改负重
-  #--------------------------------------------------------------------------
-  def current_load(current_load,assign = false)
-    if assign
-      $game_party.current_load = current_load
-    else
-      $game_party.current_load += current_load
-    end
+    ((item.load * n) + $game_party.current_load) > $game_party.total_load
   end
 end
 #==============================================================================
@@ -389,22 +350,13 @@ class Game_Player < Game_Character
   #--------------------------------------------------------------------------
   alias load_movable? movable?
   def movable?
-    return false if $game_party.load_max? && !Movable
-    load_movable?
+    return false if $game_party.load_max? && !Movable ; load_movable?
   end
-end
-#==============================================================================
-# ★ 满负重时降低移动速度 ★
-#==============================================================================
-class Game_CharacterBase
-  include VIPArcher::Load
   #--------------------------------------------------------------------------
-  # ● 获取移动速度（判断是否跑步）
+  # ● 满负重时降低移动速度
   #--------------------------------------------------------------------------
-  alias load_real_move_speed real_move_speed
   def real_move_speed
-    return Move_Speed if $game_party.load_max? && Movable
-    load_real_move_speed
+    return super - Move_Speed if $game_party.load_max? && Movable ; super
   end
 end
 #==============================================================================
@@ -428,16 +380,14 @@ class Scene_Shop < Scene_MenuBase
   #--------------------------------------------------------------------------
   alias vip_load_command_buy command_buy
   def command_buy
-    vip_load_command_buy
-    @number_window.buy_or_sell = true
+    vip_load_command_buy ; @number_window.buy_or_sell = true
   end
   #--------------------------------------------------------------------------
   # ● 指令“卖出”
   #--------------------------------------------------------------------------
   alias vip_load_command_sell command_sell
   def command_sell
-    vip_load_command_sell
-    @number_window.buy_or_sell = false
+    vip_load_command_sell ; @number_window.buy_or_sell = false
   end
   #--------------------------------------------------------------------------
   # ● 获取可以买入的最大值

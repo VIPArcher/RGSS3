@@ -14,8 +14,8 @@ class Game_Player < Game_Character
   # ● 矫正姿势
   #--------------------------------------------------------------------------
   def straighten
-    return super unless @frame
-    @pattern = @frame if @walk_anime || @step_anime
+    return super unless @fix
+    @pattern = @fix if @walk_anime || @step_anime
     @anime_count = 0
   end
   #--------------------------------------------------------------------------
@@ -24,7 +24,19 @@ class Game_Player < Game_Character
   alias characters_frame_refresh refresh
   def refresh
     characters_frame_refresh
-    @original_pattern = @frame = $1.to_i if @character_name =~ /#(\d+)/
+    @original_pattern = @fix = $1.to_i if @character_name =~ /#(\d+)/
+    @frame = $1.to_i if @character_name =~ /@(\d+)/
+  end
+  #--------------------------------------------------------------------------
+  # ● 更新动画图案
+  #--------------------------------------------------------------------------
+  def update_anime_pattern
+    return super unless @frame
+    if !@step_anime && @stop_count > 0
+      @pattern = @original_pattern
+    else
+      @pattern = (@pattern + 1) % @frame
+    end
   end
 end
 #-------------------------------------------------------------------------------

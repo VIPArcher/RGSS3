@@ -78,13 +78,13 @@ class << DataManager
   end
 end
 #-------------------------------------------------------------------------------
-class Scene_Load < Scene_File
+class Game_System
   #--------------------------------------------------------------------------
-  # ● 读档成功时的处理
+  # ● 读档后的处理
   #--------------------------------------------------------------------------
-  alias load_sw_var on_load_success
-  def on_load_success
-    load_sw_var ; VIPArcher::GLOBAL.load_game_versw
+  alias_method :after_load_data , :on_after_load
+  def on_after_load
+    after_load_data ; VIPArcher::GLOBAL.load_game_versw
   end
 end
 #-------------------------------------------------------------------------------
