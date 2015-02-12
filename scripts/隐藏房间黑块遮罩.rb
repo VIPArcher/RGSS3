@@ -3,11 +3,15 @@
 #  by：VIPArcher
 #  -- 本脚本来自 http://rm.66rpg.com 使用或转载请保留以上信息。
 #==============================================================================
-# 使用说明：在需要用黑块遮罩的地图上建一个事件，事件名为 "Black_Romm" 
+# 使用说明：在需要用黑块遮罩的地图上建一个事件，事件名为 "Black_Room" 
 #  并且在该事件里注释上需要遮罩的范围矩形
-#  例如 <6,4,10,17> 就为从地图坐标 x:6,y:4开始的宽:10,高:17的矩形区域
-#  填充上黑色块遮罩掉，当玩家踏入这个矩形时遮罩块消失。
-#  注释多个黑块房间请换行,指定遮罩块颜色在同一行后面加上<color=Color.new(R,G,B)>
+#  例如 <6,4,10,17> 就为从地图坐标 x:6,y:4开始到坐标x:10,y:17的矩形区域填充上黑色
+#  块遮罩掉，当玩家踏入这个矩形时遮罩块消失。查看坐标可以看地图编辑器右下角，把要
+#  遮罩的区域的左上角的坐标和右下角的坐标带入即可。
+#  指定遮罩块颜色可在设置的第一行注释上<color=Color.new(R,G,B)>
+#  每个遮罩可以指定角色踏入的矩形，规则同上，注释方法为在对应的矩形后面同一行注释
+#  例如<6,4,10,17>,[6,4,10,18]，未指定踏入区域时默认原矩形为踏入区域
+#  如需注释多个黑块房间请注意换行。
 #==============================================================================
 $VIPArcherScript ||= {};$VIPArcherScript[:black_room] = 20150211
 #-------------------------------------------------------------------------------
@@ -20,7 +24,7 @@ module VIPArcher::BlackRoom
   SW = 1                         # 该开关开启时遮罩块不可见
   Edge = 16                      # 遮罩块边距留空的距离
   Room_Color = Color.new(0,0,0)  # 默认遮罩块填充的颜色
-  Event_Name = 'Black_Romm'      # 设置遮罩块的事件名
+  Event_Name = 'Black_Room'      # 设置遮罩块的事件名
   Opacity_Speed = 17             # 透明度变化的速度
 end
 #==============================================================================
@@ -31,11 +35,12 @@ class Sprite_BlackRoom < Sprite
   #--------------------------------------------------------------------------
   # ● 初始化对象
   #--------------------------------------------------------------------------
-  def initialize(rect,color,viewport)
+  def initialize(rect,check_rect,color,viewport)
     super(viewport)
-    @color , @rect = color , rect
+    @check_rect, @color = check_rect,color
     self.x, self.y, self.z = rect.x * 32, rect.y * 32, Z
-    set_bitmap(self.x,self.y,rect.width * 32,rect.height * 32)
+    width, height = rect.width - rect.x + 1,rect.height - rect.y + 1
+    set_bitmap(self.x,self.y,width * 32,height * 32)
   end
   #--------------------------------------------------------------------------
   # ● 设置Bitmap
@@ -56,9 +61,8 @@ class Sprite_BlackRoom < Sprite
   # ● 位置判定
   #--------------------------------------------------------------------------
   def character_pos?
-    $game_player.y >= bitmap.height / 32 + @rect.y ||
-    $game_player.x >= bitmap.width  / 32 + @rect.x ||
-    $game_player.x < @rect.x || $game_player.y < @rect.y
+    $game_player.x > @check_rect.width  || $game_player.x <  @check_rect.x ||
+    $game_player.y > @check_rect.height || $game_player.y <  @check_rect.y
   end
   #--------------------------------------------------------------------------
   # ● 更新透明度
@@ -107,11 +111,15 @@ class Spriteset_Map
   def get_setup(command)
     return unless command.code == 108 or 408
     command.parameters.each do |line|
+      @color = eval($1) if line =~ /<color\s*=\s*(.*?)\s*>/i
+      @color ||= Room_Color
       if line =~ /<(\d+.*?)>/; x = $1.split(',')
-        color = eval($1) if line =~ /<color\s*=\s*(.*?)\s*>/i
-        color ||= Room_Color
-        rect = Rect.new(x[0].to_i,x[1].to_i,x[2].to_i,x[3].to_i)
-        sprite = Sprite_BlackRoom.new(rect,color,@viewport1)
+        check_rect = rect = Rect.new(x[0].to_i,x[1].to_i,x[2].to_i,x[3].to_i)
+        if line =~ /\[(\d+.*?)\]/; x = $1.split(',')
+          check_rect = Rect.new(x[0].to_i,x[1].to_i,x[2].to_i,x[3].to_i)
+        end
+        sprite = Sprite_BlackRoom.new(rect,check_rect,@color,@viewport1)
+        sprite.opacity = 0 unless sprite.character_pos?
         @black_room_sprites.push(sprite)
       end
     end
@@ -123,7 +131,6 @@ class Spriteset_Map
   def dispose
     black_room_dispose
     room_sprite_dispose
-    @viewport4.dispose
   end
   #--------------------------------------------------------------------------
   # ● 释放遮罩块
