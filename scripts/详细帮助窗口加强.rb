@@ -1,6 +1,6 @@
 ﻿#==============================================================================
 # ■ 技能物品说明增强 蓝本：wyongcan
-# 修改 ：VIPArcher
+# 修改 ：VIPArcher [email: VIPArcher@sina.com]
 #
 # 改动说明：
 # 改用新的帮助窗口和新定义draw_text_vip方法来增强兼容性
@@ -12,7 +12,7 @@
 # 2015.01.25 : 无聊的的修改(重写)[划掉]可以无视[划掉]
 #  -- 本脚本来自 http://rm.66rpg.com 使用或转载请保留以上信息。
 #==============================================================================
-$VIPArcherScript ||= {};$VIPArcherScript[:help_ex] = 20141007
+$VIPArcherScript ||= {};$VIPArcherScript[:help_ex] = __FILE__ #20141007
 $VIPArcherScript[:equip_limit] = false #是否使用了后知后觉的装备能力限制
 module VIPArcher end
 #-------------------------------------------------------------------------------
@@ -865,3 +865,14 @@ class Scene_Shop < Scene_MenuBase
     help_ex_on_sell_cancel ; @help_ex_window.hide
   end
 end
+#==============================================================================
+# ★ 脚本顺序检查 ★
+#==============================================================================
+msgbox "物品描绘颜色脚本需置于物品帮助增强脚本之下" if $VIPArcherScript[:itemcolor] &&
+  $VIPArcherScript[:help_ex] > $VIPArcherScript[:itemcolor]
+msgbox "队伍掉率扩展脚本需置于物品帮助增强脚本之下" if $VIPArcherScript[:exdrop_rate] &&
+  $VIPArcherScript[:help_ex] > $VIPArcherScript[:exdrop_rate]
+msgbox "装备风格扩展脚本需置于物品帮助增强脚本之下" if $VIPArcherScript[:slot_type] &&
+  $VIPArcherScript[:help_ex] > $VIPArcherScript[:slot_type]
+msgbox "队伍负重脚本需置于物品帮助增强脚本之下" if $VIPArcherScript[:load] &&
+  $VIPArcherScript[:help_ex] > $VIPArcherScript[:load]

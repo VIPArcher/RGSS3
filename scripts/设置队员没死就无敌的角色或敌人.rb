@@ -1,4 +1,4 @@
-
+# VIPArcher [email: VIPArcher@sina.com]
 #该脚本写得相当随意，如果冲突或者无效请放弃使用
 class Game_Battler
  

@@ -1,33 +1,59 @@
 #===============================================================================
-#  判断当前位置 By：VIPArcher
+#  判断当前位置信息 By：VIPArcher [email: VIPArcher@sina.com]
 #===============================================================================
 #  -- 本脚本来自 http://rm.66rpg.com 使用或转载请保留以上信息。
 #  说明：偷懒用，纯事件完全可以轻松做出相同效果，该脚本只是为了更加偷懒
 #    用法是:分歧条件-脚本-
-#    player_map_pos?(m, x, y)  #判断玩家当前位置是否为(m, x, y) m 为地图ID
-#    player_pos?(x ,y)         #判断玩家当前位置是否为(x,y)
-#    event_pos?(x, y)          #判断本事件当前坐标位置是否为(x,y)
-#  另外：get_character(param)  是个好东西
+#  判断玩家位置(返回布尔值true/false)
+#    player_pos?(x, y, m)  其中 m  为地图ID可省略，省略时 m  默认为当前地图ID
+#  判断事件位置(返回布尔值true/false)
+#    event_pos?(x, y, id)  其中 id 为事件ID可省略，省略时 id 默认为当前事件ID
+#  获取地形标志(返回地形标志)
+#    terrain_tag(id)       其中 id 为事件ID可省略，省略时 id 默认为玩家，否则
+#                          为对应事件，为负数则为对应位置的队员
+#  获取区域ID(返回区域ID)
+#    region_id(id)         其中 id 为事件ID可省略，省略时 id 默认为玩家，否则
+#                          为对应事件，为负数则为对应位置的队员
 #===============================================================================
 $VIPArcherScript ||= {};$VIPArcherScript[:location] = 20141203
 #--------------------------------------------------------------------------------
 class Game_Interpreter
   #--------------------------------------------------------------------------
-  # ● 判断玩家当前坐标位置是否为(m, x, y)
+  # ● 判断玩家当前坐标位置是否为(x, y, m)
   #--------------------------------------------------------------------------
-  def player_map_pos?(m, x, y)
-    $game_map.map_id == m && player_pos?(x, y)
+  def player_pos?(x, y, m = @map_id)
+    $game_map.map_id == m && $game_player.pos?(x, y)
   end
   #--------------------------------------------------------------------------
-  # ● 判断玩家当前坐标位置是否为(x,y)
+  # ● 判断当前坐标位置是否为(x,y,id)
   #--------------------------------------------------------------------------
-  def player_pos?(x, y)
-    $game_player.pos?(x, y)
+  def event_pos?(x, y, id = @event_id)
+    $game_map.events[id].pos?(x, y)
   end
   #--------------------------------------------------------------------------
-  # ● 判断本事件当前坐标位置是否为(x,y)
+  # ● 获取地形标志
+  #    id 小于 0 时为对应队友， 等于 0 时为当前事件，大于 0 为对应事件
   #--------------------------------------------------------------------------
-  def event_pos?(x, y)
-    $game_map.events[@event_id].pos?(x, y)
+  def terrain_tag(id = $game_player)
+    case id
+    when $game_player  then id.terrain_tag
+    when 0..2147483648
+      get_character(id).terrain_tag
+    else
+      $game_player.followers[id.abs - 1].terrain_tag
+    end
+  end
+  #--------------------------------------------------------------------------
+  # ● 获取区域ID
+  #    id 小于 0 时为对应队友， 等于 0 时为当前事件，大于 0 为对应事件
+  #--------------------------------------------------------------------------
+  def region_id(id = $game_player)
+    case id
+    when $game_player  then id.region_id
+    when 0..2147483648
+      get_character(id).region_id
+    else
+      $game_player.followers[id.abs - 1].region_id
+    end
   end
 end
