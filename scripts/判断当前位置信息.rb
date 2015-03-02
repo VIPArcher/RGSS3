@@ -37,10 +37,10 @@ class Game_Interpreter
   def terrain_tag(id = $game_player)
     case id
     when $game_player  then id.terrain_tag
-    when 0..2147483648
-      get_character(id).terrain_tag
-    else
+    when -$game_party.max_battle_members + 1..-1
       $game_player.followers[id.abs - 1].terrain_tag
+    else
+      get_character(id).terrain_tag
     end
   end
   #--------------------------------------------------------------------------
@@ -50,10 +50,10 @@ class Game_Interpreter
   def region_id(id = $game_player)
     case id
     when $game_player  then id.region_id
-    when 0..2147483648
-      get_character(id).region_id
-    else
+    when -$game_party.max_battle_members + 1..-1
       $game_player.followers[id.abs - 1].region_id
+    else
+      get_character(id).region_id
     end
   end
 end
