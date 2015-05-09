@@ -36,6 +36,20 @@ $VIPArcherScript ||= {};$VIPArcherScript[:version_check] = 20150401
      使用github，上传一个写着游戏版本内容的页面或者文件，然后去匹配它。会用git的话，我
  觉得剩下的你都可以自己弄了。噗噗噗。
 =end
+class String
+  #--------------------------------------------------------------------------
+  # ● 快捷方式：从 宽字符 转为 UTF-8
+  #--------------------------------------------------------------------------
+  def w2u
+    self.unpack("S*").pack("U*")
+  end
+  #--------------------------------------------------------------------------
+  # ● 快捷方式：从 UTF-8 转为 宽字符
+  #--------------------------------------------------------------------------
+  def u2w
+    self.unpack("U*").pack("S*")
+  end
+end
 module VIPArcher
  
   # 链接设置
@@ -49,20 +63,12 @@ module VIPArcher
   # API
   ShellExecuteA          = Win32API.new('shell32', 'ShellExecuteA'         , 'pppppi', 'i')
   URLDownloadToCacheFile = Win32API.new('Urlmon' , 'URLDownloadToCacheFile', 'ippiii', 'i')
-  MessageBoxW            = Win32API.new('user32' , 'MessageBoxW'           , 'LppL'  , 'L')
+  MessageBoxW            = Win32API.new('user32' , 'MessageBoxW'           , 'lppl'  , 'l')
  
   # 方法
   # 打开网页 url
   def self.open_url(url)
     ShellExecuteA.call(0, 'open', url, 0, 0, 1)
-  end
-  # UTF_8转为宽字符
-  def self.utf8_to_wide(str)
-    str.unpack("U*").pack("S*")
-  end
-  # 宽字符转为UTF_8
-  def self.wide_to_utf8(str)
-    str.unpack("S*").pack("U*")
   end
 end
 module Game_Version
@@ -84,16 +90,14 @@ module Game_Version
     include VIPArcher
     # 版本检查
     def check
-      title = VIPArcher.utf8_to_wide("联网检查游戏的最新版") + "\0\0"
-      the_version_hint = sprintf(Current_Version_Hint, The_Current_Version)
-      text = VIPArcher.utf8_to_wide(the_version_hint) + "\0\0"
-      user = MessageBoxW.call(0, text, title, 32 | 4)
+      title = "联网检查游戏的最新版".u2w + "\0\0"
+      the_version_hint = sprintf(Current_Version_Hint, The_Current_Version).u2w + "\0\0"
+      user = MessageBoxW.call(0, text, the_version_hint, 32 | 4)
       return unless user == 6; return unless version
       return msgbox No_New_Version_Hint if The_Current_Version == @version
-      title = VIPArcher.utf8_to_wide("是否前往官方下载页更新？") + "\0\0"
-      version_hint = sprintf(New_Version_Hint, @version)
-      text = VIPArcher.utf8_to_wide(version_hint) + "\0\0"
-      user = MessageBoxW.call(0, text,title , 64 | 4)
+      title = "是否前往官方下载页更新？".u2w + "\0\0"
+      version_hint = sprintf(New_Version_Hint, @version).u2w + "\0\0"
+      user = MessageBoxW.call(0, version_hint, title , 64 | 4)
       VIPArcher.open_url(Download_Url) if user == 6
     end
     # 获取最新版本信息
