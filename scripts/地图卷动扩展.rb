@@ -31,17 +31,14 @@ class Game_Map
   #--------------------------------------------------------------------------
   # ● 执行卷动
   #--------------------------------------------------------------------------
+  alias do_scroll_dir8_extra do_scroll
   def do_scroll(direction, distance)
+    do_scroll_dir8_extra(direction, distance)
     case direction
     when 1;  scroll_down (distance);scroll_left (distance)
-    when 2;  scroll_down (distance)
     when 3;  scroll_down (distance);scroll_right(distance)
-    when 4;  scroll_left (distance)
-    when 5;
-    when 6;  scroll_right(distance)
     when 7;  scroll_up   (distance);scroll_left (distance)
-    when 8;  scroll_up   (distance)
     when 9;  scroll_up   (distance);scroll_right(distance)
-    end
+    else end
   end
 end
