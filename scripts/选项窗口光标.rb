@@ -15,11 +15,11 @@ module VIPArcher end
 # ★ 设定部分 ★
 #==============================================================================
 module VIPArcher::WindowCursor
-  FILENAME = "WindowCursor"      # 光标的文件名(放在 Graphics\System 文件夹下)
-  BUFFER_X = 0                   # 光标 X 坐标的修正量
-  BUFFER_Y = 6                   # 光标 Y 坐标的修正量
-  EFFECT_TYPE  = 1               # 特效: 0 => 无特效,1 => 横向,2 => 纵向
-  EFFECT_SPEED = 6               # 特效滑动的速度(请不要设置为 0)
+  FILENAME = "WindowCursor"  # 光标的文件名(放在 Graphics\System 文件夹下)
+  BUFFER_X = 0               # 光标 X 坐标的修正量
+  BUFFER_Y = 6               # 光标 Y 坐标的修正量
+  EFFECT_TYPE  = 1           # 特效: nil => 无特效,1 => 横向,2 => 纵向
+  EFFECT_SPEED = 6           # 特效滑动的速度(请不要设置为 0)
 end
 #==============================================================================
 # ☆ 设定结束 ☆
@@ -53,7 +53,7 @@ class Sprite_WindowCursor < Sprite_Base
     super
     update_visibility
     update_position
-    update_effect
+    update_effect if Graphics.frame_count % EFFECT_SPEED == 0
   end
   #--------------------------------------------------------------------------
   # ● 释放
@@ -66,20 +66,11 @@ class Sprite_WindowCursor < Sprite_Base
   # ● 更新特效
   #--------------------------------------------------------------------------    
   def update_effect
-    case EFFECT_TYPE
-    when 1
-      return if Graphics.frame_count % EFFECT_SPEED != 0
-      case @effect[0] += 1
-      when 1..7;  @effect[1] += 1
-      when 8..14; @effect[1] -= 1
-      else @effect[0] = 0 end
-    when 2
-      return if Graphics.frame_count % EFFECT_SPEED != 0
-      case @effect[0] += 1
-      when 1..7;  @effect[2] += 1
-      when 8..14; @effect[2] -= 1
-      else @effect[0] = 0 end
-    else return end
+    return unless EFFECT_TYPE
+    case @effect[0] += 1
+    when 1..7  then @effect[EFFECT_TYPE] += 1
+    when 8..14 then @effect[EFFECT_TYPE] -= 1
+    else @effect[0] = 0 end
   end
   #--------------------------------------------------------------------------
   # ● 更新可见性
@@ -110,7 +101,7 @@ class Window_Selectable < Window_Base
     create_cursor_sprite
   end
   #--------------------------------------------------------------------------
-  # ● 创建光标
+  # ● 创建光标 注：如果某类选项窗口不需要光标，可在其窗口类中重定义该方法
   #--------------------------------------------------------------------------
   def create_cursor_sprite
     @cursor_sprite = Sprite_WindowCursor.new(self)
