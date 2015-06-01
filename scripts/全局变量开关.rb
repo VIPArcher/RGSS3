@@ -15,8 +15,8 @@ module VIPArcher end
 #  ☆ 设定部分 ☆
 #==============================================================================
 module VIPArcher::GLOBAL
-  FILEURL = "Saves"           #储存数据的文件夹
-  NAME = "Save_data.rvdata2"  #储存数据的文件名
+  FILEURL = "Saves"             #储存数据的文件夹
+  NAME = "System_Save.rvdata2"  #储存数据的文件名
   VAR = [1,2,3]   # 新游戏/读档时载入的变量
   SW  = [1,2,3]   # 新游戏/读档时载入的开关
 end

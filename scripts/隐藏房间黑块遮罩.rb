@@ -105,9 +105,9 @@ class Spriteset_Map
   #--------------------------------------------------------------------------
   # ● 生成黑色遮罩块
   #--------------------------------------------------------------------------
-  alias black_room_create_characters create_characters
-  def create_characters
-    black_room_create_characters
+  alias black_room_create_tilemap create_tilemap
+  def create_tilemap
+    black_room_create_tilemap
     room_sprite_dispose if @black_room_sprites
     @black_room_sprites = []
     $game_map.events.values.each do |event|
