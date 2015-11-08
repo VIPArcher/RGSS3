@@ -19,7 +19,7 @@ module VIPArcher
       :weapon     => "武器", #默认分类
       :armor      => "护甲", #默认分类
       :key_item   => "贵重", #默认分类
-      :viparcher  => "VIP"
+      :viparcher  => "VIP",
       #在这里继续添加...
     } #  <- 别删
 end
