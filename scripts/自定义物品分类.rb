@@ -12,8 +12,10 @@ $VIPArcherScript ||= {};$VIPArcherScript[:item_category] = 20141017
 #==============================================================================
 # ● 设定区
 #==============================================================================
-module VIPArcher
-  ITEM_CATEGORY = { #  <- 别删
+module VIPArcher end
+module VIPArcher::ITEM
+  MAX_COL  = 4 # 一页显示的分类列数
+  CATEGORY = { #  <- 别删
 #格式:分类标识符号 => "分类名称", 注：标识尽量独特不重复即可
       :item       => "道具", #默认分类
       :weapon     => "武器", #默认分类
@@ -21,16 +23,17 @@ module VIPArcher
       :key_item   => "贵重", #默认分类
       :viparcher  => "VIP",
       #在这里继续添加...
-    } #  <- 别删
+  } #  <- 别删
 end
 #--------------------------------------------------------------------------------
 class Window_ItemList < Window_Selectable
+  include VIPArcher::ITEM
   #--------------------------------------------------------------------------
   # ● 查询列表中是否含有此物品
   #--------------------------------------------------------------------------
   alias vip_include? include?
   def include?(item)
-    if item && item.note =~ /<分类[:].*>/
+    if item && item.note =~ /<(?:category|分类)[: ].*>/i
       note_include?(item)
     else
       vip_include?(item)
@@ -40,15 +43,20 @@ class Window_ItemList < Window_Selectable
   # ● 检查备注分类
   #--------------------------------------------------------------------------
   def note_include?(item)
-    item.note =~ /<分类[:]\s*#{VIPArcher::ITEM_CATEGORY[@category]}>/
+    item.note =~ /<(?:category|分类)[:]\s*#{CATEGORY[@category]}>/i
   end
 end
 #--------------------------------------------------------------------------------
 class Window_ItemCategory < Window_HorzCommand
+  include VIPArcher::ITEM
   #--------------------------------------------------------------------------
   # ● 生成指令列表
   #--------------------------------------------------------------------------
   def make_command_list
-    VIPArcher::ITEM_CATEGORY.each{|key, value| add_command(value,key)}
+    CATEGORY.each{|key, value| add_command(value,key)}
   end
+  #--------------------------------------------------------------------------
+  # ● 获取列数
+  #--------------------------------------------------------------------------
+  def col_max; MAX_COL end
 end
