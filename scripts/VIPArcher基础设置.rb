@@ -132,3 +132,20 @@ class RPG::BaseItem
     result
   end
 end
+class Bitmap
+  #--------------------------------------------------------------------------
+  # ● 由白色渐变到实际的字体颜色的渐变字
+  #     level  : 渐变等级，值越高效果越差。效率越好。不可为 0
+  #--------------------------------------------------------------------------
+  def draw_gradient_text(x, y, w, h, str, align = 0, level = 1)
+    buffer = Bitmap.new(w, h); buffer.font = font.dup;
+    alpha = font.color.alpha; delta = alpha / h.to_f * level;
+    buffer.font.outline = buffer.font.shadow = false
+    buffer.font.color = Color.new(255, 255, 255); 
+    draw_text(x, y, w, h, str, align); buffer.draw_text(0, 0, w, h, str, align)
+    rect = Rect.new(0, 0, w, level)
+    y.upto(y + h){ |n| next unless n % level == 0
+      blt(x, n - 1, buffer, rect, alpha -= delta); rect.y += level
+    }; buffer.dispose; self;
+  end
+end
