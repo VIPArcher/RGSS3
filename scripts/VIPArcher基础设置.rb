@@ -146,7 +146,7 @@ class Bitmap
     rect, buffer.font.color = Rect.new(0, 0, w, level), Color.new(255, 255, 255)
     draw_text(x, y, w, h, str, align); buffer.draw_text(0, 0, w, h, str, align)
     y.upto(y + h) { |n| next unless n % level == 0
-     blt(x, n, buffer, rect, alpha -= delta); rect.y += level
+      blt(x, n, buffer, rect, alpha -= delta); rect.y += level
     }; buffer.dispose; self
   end
 end
