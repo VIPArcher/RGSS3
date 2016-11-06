@@ -1,26 +1,46 @@
-﻿#===============================================================================
-# ■ 八方向行走
+#===============================================================================
+# ■ 八方向移动行走图动画扩展
 # by ：VIPArcher [email: VIPArcher@sina.com]
 #  -- 本脚本来自 http://rm.66rpg.com 使用或转载请保留以上信息。
 #==============================================================================
 # ■ 使用说明：
-#   在Characters里添加八方向行走图 在四方向素材文件名的基础上＋_8D
-#   做为该素材的八方向行走图，(2×4的素材也得用2×4的八方向素材)
+#   行走图素材文件名最前面添加 '@'符号视为该角色/事件使用八方向行走图
+#   素材规格为2 * 4角色元的素材，其中第一角色元为正常状态行走图，下面
+#   也就是第五角色元为对应的斜向行走图，第二角色元为奔跑时行走图，下面
+#   也就是第六角色元为对应奔跑时斜向行走图，第三角色元为站立一段时间后
+#   待机播放的踏步行走图，下面也就是第七角色元为对应斜向踏步行走图。
+#          例如  @Actor1.png :
+#         ┌───┬───┬───┬───┐
+#         │　步　│　奔　│　待　│　　　│
+#         │　行　│　跑　│　机　│　　　│
+#         │　行　│　行　│　行　│　　　│
+#         │　走　│　走　│　走　│　　　│
+#         │　图　│　图　│　图　│　　　│
+#         ├───┼───┼───┼───┤
+#         │　斜　│　斜　│　斜　│　　　│
+#         │　向　│　向　│　向　│　　　│
+#         │　步　│　奔　│　待　│　　　│
+#         │　行　│　跑　│　机　│　　　│
+#         └───┴───┴───┴───┘
 #==============================================================================
-$VIPArcherScript ||= {};$VIPArcherScript[:dir8_move] = 20141031
-#--------------------------------------------------------------------------------
+$VIPArcherScript ||= {};$VIPArcherScript[:dir8_move] = 20161106
+#==============================================================================
+# ★ 设定部分 ★
+#==============================================================================
 module VIPArcher end
-#==============================================================================
-#  ★ 设定部分 ★
-#==============================================================================
-module VIPArcher::DIR8
-  OFF_SW = 0       #控制关闭八方向行走的开关(0"禁用"该功能)
-  NAME_AFFIX = "_8D" #八方向行走图文件名后缀
+module VIPArcher::Dir_8
+  OFF_SW = 0        # 控制关闭八方向行走的开关
+  STEP_ANIME_SW = 1 # 控制待机动画启用的开关
+  WAIT_TIME  = 150  # 静止后进入待机动画的时间(帧)
+  ANIME_TIME = 25   # 待机动画播放的时长(帧)
+  GAP_TIME   = 90   # 两次待机动画之间的时间间隔
 end
 #==============================================================================
-#  ☆ 设定结束 ☆
+# ■ Game_Player
 #==============================================================================
 class Game_Player
+  include VIPArcher::Dir_8
+  attr_reader   :static_anime
   #--------------------------------------------------------------------------
   # ● 由方向键移动
   #--------------------------------------------------------------------------
@@ -28,17 +48,47 @@ class Game_Player
     return if !movable? || $game_map.interpreter.running?
     if [1, 3, 7, 9].include?(Input.dir8)
       case Input.dir8
-      when 1; move_diagonal(4, 2)
-      when 3; move_diagonal(6, 2)
-      when 7; move_diagonal(4, 8)
-      when 9; move_diagonal(6, 8)
-      end
-      return if @move_succeed
-    end unless $game_switches[VIPArcher::DIR8::OFF_SW]
+      when 1 then move_diagonal(4, 2)
+      when 3 then move_diagonal(6, 2)
+      when 7 then move_diagonal(4, 8)
+      when 9 then move_diagonal(6, 8)
+      end; return if @move_succeed
+    end unless $game_switches[OFF_SW]
     move_straight(Input.dir4) if Input.dir4 > 0
   end
+  #--------------------------------------------------------------------------
+  # ● 是否奔跑中
+  #--------------------------------------------------------------------------
+  def is_dash?
+    return dash? && @stop_count.zero?
+  end
+  #--------------------------------------------------------------------------
+  # ● 更新画面
+  #--------------------------------------------------------------------------
+  alias dir8_update update
+  def update
+    dir8_update
+    return if $game_switches[STEP_ANIME_SW]
+    @step_anime = case @stop_count
+    when WAIT_TIME...WAIT_TIME + ANIME_TIME then @static_anime = true
+    when WAIT_TIME + ANIME_TIME then @stop_count = WAIT_TIME - GAP_TIME
+    @static_anime = false else @static_anime = false end
+  end
 end
-#--------------------------------------------------------------------------------
+#==============================================================================
+# ■ Game_Event
+#==============================================================================
+class Game_Event
+  #--------------------------------------------------------------------------
+  # ● 是否奔跑中
+  #--------------------------------------------------------------------------
+  def is_dash?
+    return !@locked && @move_speed >= 5 && @stop_count.zero? 
+  end
+end
+#==============================================================================
+# ■ Game_CharacterBase
+#==============================================================================
 class Game_CharacterBase
   #--------------------------------------------------------------------------
   # ● 斜向移动
@@ -57,23 +107,15 @@ class Game_CharacterBase
     end
   end
 end
-#--------------------------------------------------------------------------------
+#==============================================================================
+# ■ Sprite_Character
+#==============================================================================
 class Sprite_Character < Sprite_Base
   #--------------------------------------------------------------------------
-  # ● 设置角色的位图
+  # ● 是否是八方向素材
   #--------------------------------------------------------------------------
-  alias dir8_set_character set_character_bitmap
-  def set_character_bitmap
-    dir8_set_character
-    set_dir8_bitmap
-  end
-  #--------------------------------------------------------------------------
-  # ● 设置八方向的位图
-  #--------------------------------------------------------------------------
-  def set_dir8_bitmap
-    dir8_name = @character_name + VIPArcher::DIR8::NAME_AFFIX
-    @character_dir4 = self.bitmap.clone
-    @character_dir8 = Cache.character(dir8_name) rescue @character_dir4
+  def is_dir8?
+    return @character_name =~ /^\@.+/
   end
   #--------------------------------------------------------------------------
   # ● 更新源矩形
@@ -82,23 +124,16 @@ class Sprite_Character < Sprite_Base
     return if @tile_id != 0
     index = @character.character_index
     pattern = @character.pattern < 3 ? @character.pattern : 1
+    index = if @character.is_dash? then 1
+    elsif @character.instance_of?(Game_Player) && $game_player.static_anime
+    2 else 0 end if is_dir8?
     sx = (index % 4 * 3 + pattern) * @cw
-    if @character.direction % 2 == 1
-      self.bitmap = @character_dir8
+    unless @character.direction.even?
+      index += 4 if is_dir8?
       sy = (index / 4 * 4 + (@character.direction + 1) / 3) * @ch
     else
-      self.bitmap = @character_dir4
       sy = (index / 4 * 4 + (@character.direction - 2) / 2) * @ch
     end
     self.src_rect.set(sx, sy, @cw, @ch)
-  end
-  #--------------------------------------------------------------------------
-  # ● 释放
-  #--------------------------------------------------------------------------
-  alias dir8_dispose dispose
-  def dispose
-    dir8_dispose
-    @character_dir4.dispose if @character_dir4
-    @character_dir8.dispose if @character_dir8
   end
 end
