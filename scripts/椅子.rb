@@ -33,10 +33,8 @@ class Game_CharacterBase
     if self.is_a?(Game_Event)   # 判定是否地图事件
       return 0 if self.instance_variable_get("@event").name.include?("EV")
       return 0 if move_frequency == 5
-      return moving? ? 0 : TERRAIN_Y[self.terrain_tag]
-    else
-      return Input.dir8 > 0 ? 0 : TERRAIN_Y[self.terrain_tag]
     end
+    @stop_count == 0 ? 0 : TERRAIN_Y[self.terrain_tag]
   end
   #--------------------------------------------------------------------------
   # ● 获取画面 Y 坐标（加上椅子高度）
