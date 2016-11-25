@@ -1,117 +1,149 @@
 #==============================================================================
-# ■ 游戏版本检查
+# ■ 游戏版本检查 V2.0
 # By ：VIPArcher [email: VIPArcher@sina.com]
 #  -- 本脚本来自 httprm.66rpg.com 使用或转载请保留以上信息。
 #==============================================================================
-# 说明：
-#     这个脚本是喵呜喵5的创意（我是在她的游戏《Memo 寻找记忆的少女》中看到这个功能
-# 于是试着自己实现一下，脚本中用到的 API 是学习/借鉴自晴兰的API调教。我对API不是很
-# 熟练，如果姿势上有错误，或者我写的不好，请直接指出，谢谢。
-# 最后安利一下(啥？):
-#     喵呜 = 0的《Memo 寻找记忆的少女》这游戏炒鸡赞，没玩过的孩子们酷爱去玩，玩
-# 过的孩子再去玩几遍，或许你会发现一些以前玩的时候没发现过的小彩蛋什么的。
-# 游戏官网就是这个脚本提供的那个主页/下载地址！嗯，愚人节快乐 $m5script = 0
+# ● 配置: 配置好下面的链接和版本信息，并把云端版本文件更新成和本脚本的版本一致
+#    使用：脚本调用: Game_Version.check       进行版本检查
+#    另外：脚本调用: VIPArcher.open_url("url") 可以打开链接为 url 的网页
 #==============================================================================
-# 调用方法:
-#     打开网页: VIPArcher.open_url("网址")
-#     版本检查: Game_Version.check
-#     获取版本: Game_Version.version
+$VIPArcherScript ||= {};$VIPArcherScript[:version_check] = 20161125
+module VIPArcher
+  The_Current_Version = "1.1.1" # 当前游戏版本
+  #--------------------------------------------------------------------------
+  # ● 链接的设置
+  #--------------------------------------------------------------------------
+  # 官网主页
+  Home_Url     = "http://house-of-lies.lofter.com/index"
+  # 游戏下载链接
+  Download_Url = "http://house-of-lies.lofter.com/download"
+  # 云端版本号文件链接
+  Version_Url  = "http://git.oschina.net/VIPArcher/Game/raw/master/version"
+  # 云端版本更新内容文件链接
+  Features_Url = "http://git.oschina.net/VIPArcher/Game/raw/master/features"
+  #--------------------------------------------------------------------------
+  # ● 用语的设置
+  #--------------------------------------------------------------------------
+  # 显示当前版本并询问是否更新的提示内容 (需要改动的话请只改动中间三行)
+  #    %s 版本信息占位符  EOF 为创建多行字符串用的，头尾两个都尽量别动
+  Current_Version_Hint = <<EOF
+您当前的游戏版本为V%s，现在联网进行版本检查吗？
+【提醒】：检查中游戏将出现无响应状况，请耐心等待，并确保网络连接正常。
+【注意】：一般情况下新版本游戏仍然可以继承旧版本的Saves文件夹。
+EOF
+  # 当前已经是最新版本提示
+  No_New_Version_Hint  = "恭喜！当前的游戏已是最新版本。\n祝您游戏愉快！"
+  # 提示有新版本标题  %s 版本信息占位符
+  New_Version_Title    = "已找到最新版V%s，立即访问官网下载更新补丁?"
+  # 新版本提示(有新版本但没有找到更新内容是提示信息)
+  New_Version_Hint     = "您可以访问游戏官网以查看最新版本更新内容。"
+  # 检查失败提示 (这个提示很少会用到)
+  Check_Failure_Hint   = "检查新版本失败！建议您可以访问游戏官网以查看最新版本信息。"
+  #连接网络失败或者查询文件失败时提示 EOF 为创建多行字符串用的，头尾两个都尽量别动
+  Could_Not_Connect = <<EOF
+请确保网络链接正常！或者关闭防火墙、解除360拦截之类的。
+如果你是在我本人提供的地址下载的本游戏，那么我也只能以
+宅的名义确保本游戏的纯洁性！其他下载地址的概不负责~
+EOF
+  #--------------------------------------------------------------------------
+  # ● 需要的 Windows API 函数
+  #--------------------------------------------------------------------------
+  MessageBoxW            = Win32API.new('user32', 'MessageBoxW',            'lppl',   'l')
+  ShellExecuteA          = Win32API.new('shell32','ShellExecuteA'         , 'pppppi', 'i')
+  URLDownloadToCacheFile = Win32API.new('Urlmon', 'URLDownloadToCacheFile', 'ippiii', 'i')
+  #--------------------------------------------------------------------------
+  # ● 打开地址
+  #     VIPArcher.open_url(addr)
+  #--------------------------------------------------------------------------
+  def self.open_url(addr)
+    ShellExecuteA.call(0,'open',addr,0, 0, 1)
+  end
+  #--------------------------------------------------------------------------
+  # ● 呼出 MessageBoxW 对话框
+  #    icon 图标 16 -> :error 32 -> :question 48 -> :warning 64 -> :information
+  #    button    0 -> 确定 1 -> 确定 取消 2 中止 重试 忽略
+  #              3 -> 是 否 取消          4 -> 是 否
+  #    return    确定(1) 取消(2) 中止(3) 重试(4) 忽略(5) 是(6) 否(7)
+  #--------------------------------------------------------------------------
+  def self.callMessageBoxW(hint, title, icon, button,hWnd = 0)
+    MessageBoxW.call(hWnd, hint.u2w, title.u2w, icon | button)
+  end
+end
 #==============================================================================
-$VIPArcherScript ||= {};$VIPArcherScript[:version_check] = 20150401
-=begin
- 脚本用法:
-     使用这个大概你得有一点脚本基础？会正则的话最好啦。如果使用git就更方便了
- 使用 Lofter 姿势:
-     在你的 Lofter 上发布一条新博客，然后把这条博客的地址填到这个脚本的 Ver_Url 里
- 博客的内容尽量简短一些，比如可以博客内容：
-     
-           标题:XXX游戏版本已更新到1.30
-           
-           内容:写什么都可以，只写"[Version:1.30]"也行
-                然后关键的是必须包含这个: [Version:1.30]
-           
- 然后下面设置中正则写成  Regexp_Text =  /\[Version:([\d\.]+)\]/i
- 每次你自己更新游戏就去编辑一次那条博客。
- 推荐的使用方式:
-     使用github，上传一个写着游戏版本内容的页面或者文件，然后去匹配它。会用git的话，我
- 觉得剩下的你都可以自己弄了。噗噗噗。
-=end
+# String类
+#==============================================================================
 class String
   #--------------------------------------------------------------------------
   # ● 快捷方式：从 宽字符 转为 UTF-8
   #--------------------------------------------------------------------------
   def w2u
-    self.unpack("S*").pack("U*")
+    self.unpack("S*").pack("U*").sub(/\0+$/, '')
   end
   #--------------------------------------------------------------------------
   # ● 快捷方式：从 UTF-8 转为 宽字符
   #--------------------------------------------------------------------------
   def u2w
-    self.unpack("U*").pack("S*")
+    self.unpack("U*").pack("S*") + "\0\0"
   end
-end
-module VIPArcher
- 
-  # 链接设置
-  # 游戏主页地址
-  Home_Url     = 'http://miaowm5.gitcafe.io/memo/home.html'
-  # 游戏下载页地址
-  Download_Url = 'http://miaowm5.gitcafe.io/memo/download.html'
-  # 储存游戏版本的页面地址
-  Ver_Url      = 'http://viparcher.lofter.com/post/42ce49_6808c3a'  #远端版本页
- 
-  # API
-  ShellExecuteA          = Win32API.new('shell32', 'ShellExecuteA'         , 'pppppi', 'i')
-  URLDownloadToCacheFile = Win32API.new('Urlmon' , 'URLDownloadToCacheFile', 'ippiii', 'i')
-  MessageBoxW            = Win32API.new('user32' , 'MessageBoxW'           , 'lppl'  , 'l')
- 
-  # 方法
-  # 打开网页 url
-  def self.open_url(url)
-    ShellExecuteA.call(0, 'open', url, 0, 0, 1)
+  #--------------------------------------------------------------------------
+  # ● 强制编码
+  #--------------------------------------------------------------------------
+  def f_e
+    self.force_encoding(__ENCODING__)
   end
 end
 module Game_Version
-  The_Current_Version = "1.00"                    # 当前游戏版本
- 
-  Regexp_Text         = /\[Version:([\d\.]+)\]/i  # 匹配版本的正则
- 
-  # 用语设置
-  # 当前版本提示方式
-  Current_Version_Hint = "当前游戏版本为%s版，是否联网进行版本检查？\n" +
-                         "检查中游戏将失去响应，（新版本可以使用旧存档）"
-  # 没有新版本
-  No_New_Version_Hint  = "当前游戏已经是最新版本，祝您游戏愉快！"
-  # 新版本提示
-  New_Version_Hint     = "游戏已更新到%s版，是否前往官网下载更新?"
-  #检查失败提示
-  Check_Failure_Hint    = "版本检查失败！建议前往游戏官网查看最新版本信息"
   class << self
-    include VIPArcher
-    # 版本检查
+  include VIPArcher
+    #--------------------------------------------------------------------------
+    # ● 获取版本 Game_Version.check
+    #--------------------------------------------------------------------------
     def check
-      title = "联网检查游戏的最新版".u2w + "\0\0"
-      the_version_hint = sprintf(Current_Version_Hint, The_Current_Version).u2w + "\0\0"
-      user = MessageBoxW.call(0, text, the_version_hint, 32 | 4)
-      return unless user == 6; return unless version
-      return msgbox No_New_Version_Hint if The_Current_Version == @version
-      title = "是否前往官方下载页更新？".u2w + "\0\0"
-      version_hint = sprintf(New_Version_Hint, @version).u2w + "\0\0"
-      user = MessageBoxW.call(0, version_hint, title , 64 | 4)
-      VIPArcher.open_url(Download_Url) if user == 6
+      hint = sprintf(Current_Version_Hint, The_Current_Version)
+      return unless VIPArcher.callMessageBoxW(hint,"检查游戏版本更新",32,1) == 1
+      return unless get_version
+      if The_Current_Version == @version
+        return VIPArcher.callMessageBoxW(No_New_Version_Hint,"已是最新版", 64,0)
+      end
+      features_title = sprintf(New_Version_Title, @version)
+      hint = get_features ? @version_features : New_Version_Hint
+      if VIPArcher.callMessageBoxW(hint, features_title, 64 , 1) == 1
+        VIPArcher.open_url(Download_Url)
+      end
     end
-    # 获取最新版本信息
-    def version
+    #--------------------------------------------------------------------------
+    # ● 获取版本
+    #--------------------------------------------------------------------------
+    def get_version
       begin
-        URLDownloadToCacheFile.(0,Ver_Url,buf = "\0" * 1024,1024,0,0)
-        if open(buf.sub(/\0+$/){}, 'rb') { |p| p.read } =~ Regexp_Text
-          @version = $1
+        URLDownloadToCacheFile.call(0, "#{Version_Url}?#{rand(10)}",
+                buf = "\0" * 1024, 1024, 0, 0)
+        if file = open(buf.sub(/\0+$/,''), 'rb'){ |p| p.read }
+          @version = file.to_s
         else
-          msgbox "无法正确获取版本信息，请前往官网查看最新版本！\n地址：#{Home_Url}"
-          VIPArcher.open_url(Home_Url); false
+          hint = "#{Check_Failure_Hint}\n地址：#{Home_Url}"
+          if VIPArcher.callMessageBoxW(hint, "获取版本信息失败！", 64 , 4) == 6
+             VIPArcher.open_url(Home_Url); return false
+          end
         end
-      rescue Errno::ENOENT
-        msgbox "#{Check_Failure_Hint}\n地址：#{Home_Url}"; false
+      rescue
+        hint = "#{Could_Not_Connect}\n地址：#{Home_Url}"
+        VIPArcher.callMessageBoxW(hint, "检查新版本失败！", 64 , 1)
+        return false
+      end
+    end
+    #--------------------------------------------------------------------------
+    # ● 获取新版本更新内容
+    #--------------------------------------------------------------------------
+    def get_features
+      begin
+        URLDownloadToCacheFile.call(0, "#{Features_Url}?#{rand(10)}",
+          buf = "\0" * 1024, 1024, 0, 0)
+        if file = open(buf.sub(/\0+$/,''), 'rb'){ |p| p.read }
+          @version_features = file.f_e
+        end
+      rescue
+        return false
       end
     end
   end
