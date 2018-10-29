@@ -4,43 +4,33 @@
 #  -- 本脚本来自 http://rm.66rpg.com 使用或转载请保留以上信息。
 #==============================================================================
 # ■ 使用说明：
-#   行走图素材文件名最前面添加 '@'符号视为该角色/事件使用八方向行走图
-#   素材规格为2 * 4角色元的素材，其中第一角色元为正常状态行走图，下面
-#   也就是第五角色元为对应的斜向行走图，第二角色元为奔跑时行走图，下面
-#   也就是第六角色元为对应奔跑时斜向行走图，第三角色元为站立一段时间后
-#   待机播放的踏步行走图，下面也就是第七角色元为对应斜向踏步行走图。
-#          例如  @Actor1.png :
-#         ┌───┬───┬───┬───┐
-#         │　步　│　奔　│　待　│　　　│
-#         │　行　│　跑　│　机　│　　　│
-#         │　行　│　行　│　行　│　　　│
-#         │　走　│　走　│　走　│　　　│
-#         │　图　│　图　│　图　│　　　│
-#         ├───┼───┼───┼───┤
-#         │　斜　│　斜　│　斜　│　　　│
-#         │　向　│　向　│　向　│　　　│
-#         │　步　│　奔　│　待　│　　　│
-#         │　行　│　跑　│　机　│　　　│
-#         └───┴───┴───┴───┘
+#   行走图素材文件名最前面添加 '$@' / '!$@' 符号视为该角色/事件使用八方向行走图
+#   需为其配置对应的其他形态的行走图文件，文件名后缀规则请看设定部分
+#     例如  $@Actor1.png / !$@Actor1.png
 #==============================================================================
 $VIPArcherScript ||= {};$VIPArcherScript[:dir8_move] = 20161106
 #==============================================================================
 # ★ 设定部分 ★
 #==============================================================================
 module VIPArcher end
-module VIPArcher::Dir_8
-  OFF_SW = 0        # 控制关闭八方向行走的开关
-  STEP_ANIME_SW = 1 # 控制待机动画启用的开关
-  WAIT_TIME  = 150  # 静止后进入待机动画的时间(帧)
-  ANIME_TIME = 25   # 待机动画播放的时长(帧)
-  GAP_TIME   = 90   # 两次待机动画之间的时间间隔
+module VIPArcher::Dir8_ANIME
+  OFF_SW = 0         # 控制关闭八方向行走的开关
+  STEP_ANIME_SW = 1  # 控制待机动画启用的开关
+  WAIT_TIME   = 150  # 静止后进入待机动画的时间(帧)
+  ANIME_TIME  = 50   # 待机动画播放的时长(帧)
+  GAP_TIME    = 90   # 两次待机动画之间的时间间隔
+  WAIT_NOTE   = '<wait_anime>' # 事件使用待机动画的备注
+  DASH4_AFFIX = '_DASH'   # 奔跑普通行走图后缀
+  WAIT4_AFFIX = '_WAIT'   # 待机普通行走图后缀
+  DIRE8_AFFIX = '_8D'     # 普通斜向行走图后缀
+  DASH8_AFFIX = '_DASH8D' # 奔跑斜向行走图后缀
+  WAIT8_AFFIX = '_WAIT8D' # 待机斜向行走图后缀
 end
 #==============================================================================
 # ■ Game_Player
 #==============================================================================
 class Game_Player
-  include VIPArcher::Dir_8
-  attr_reader   :static_anime
+  include VIPArcher::Dir8_ANIME
   #--------------------------------------------------------------------------
   # ● 由方向键移动
   #--------------------------------------------------------------------------
@@ -63,21 +53,26 @@ class Game_Player
     return dash? && @stop_count.zero?
   end
   #--------------------------------------------------------------------------
-  # ● 更新画面
+  # ● 是否待机动画
   #--------------------------------------------------------------------------
-  alias dir8_update update
-  def update
-    dir8_update
-    return if $game_switches[STEP_ANIME_SW]
-    @step_anime = case @stop_count
-    when WAIT_TIME...WAIT_TIME + ANIME_TIME then @static_anime = true
-    when WAIT_TIME + ANIME_TIME then @stop_count = WAIT_TIME - GAP_TIME
-    @static_anime = false else @static_anime = false end
+  def wait_anime?
+    return true
   end
 end
-#==============================================================================
-# ■ Game_Event
-#==============================================================================
+class Game_Follower
+  #--------------------------------------------------------------------------
+  # ● 是否奔跑中
+  #--------------------------------------------------------------------------
+  def is_dash?
+    $game_player.is_dash?
+  end
+  #--------------------------------------------------------------------------
+  # ● 是否待机动画
+  #--------------------------------------------------------------------------
+  def wait_anime?
+    return true
+  end
+end
 class Game_Event
   #--------------------------------------------------------------------------
   # ● 是否奔跑中
@@ -85,11 +80,48 @@ class Game_Event
   def is_dash?
     return !@locked && @move_speed >= 5 && @stop_count.zero? 
   end
+  #--------------------------------------------------------------------------
+  # ● 是否待机动画
+  #--------------------------------------------------------------------------
+  def wait_anime?
+    wait = false
+    @list.each do |command|
+      if [108, 408].include?(command.code)
+        wait = command.parameters.any? {|line| line =~ /#{WAIT_NOTE}/i }
+      end
+    end if @list
+    return wait
+  end
 end
 #==============================================================================
 # ■ Game_CharacterBase
 #==============================================================================
 class Game_CharacterBase
+  include VIPArcher::Dir8_ANIME
+  attr_reader   :static_anime
+  #--------------------------------------------------------------------------
+  # ● 更新画面
+  #--------------------------------------------------------------------------
+  alias dir8_update update
+  def update
+    dir8_update
+    return if $game_switches[STEP_ANIME_SW]
+    return unless wait_anime?
+    @step_anime = case @stop_count
+    when WAIT_TIME...WAIT_TIME + ANIME_TIME
+      @static_anime = true
+    when WAIT_TIME + ANIME_TIME
+      @stop_count = WAIT_TIME - GAP_TIME
+      @pattern = 1
+      @static_anime = false
+    else @static_anime = false end
+  end
+  #--------------------------------------------------------------------------
+  # ● 是否待机动画
+  #--------------------------------------------------------------------------
+  def wait_anime?
+    return false
+  end
   #--------------------------------------------------------------------------
   # ● 斜向移动
   #--------------------------------------------------------------------------
@@ -101,8 +133,8 @@ class Game_CharacterBase
     dir8_move_diagonal(horz, vert)
     case [horz,vert]
     when [4,2] then set_direction(1)
-    when [4,8] then set_direction(3)
-    when [6,2] then set_direction(7)
+    when [6,2] then set_direction(3)
+    when [4,8] then set_direction(7)
     when [6,8] then set_direction(9)
     end
   end
@@ -111,11 +143,55 @@ end
 # ■ Sprite_Character
 #==============================================================================
 class Sprite_Character < Sprite_Base
+  include VIPArcher::Dir8_ANIME
   #--------------------------------------------------------------------------
   # ● 是否是八方向素材
   #--------------------------------------------------------------------------
   def is_dir8?
-    return @character_name =~ /^\@.+/
+    return @character_name =~ /^(\$@|\!\$@).+/
+  end
+  alias dir8_move_set_character_bitmap set_character_bitmap
+  #--------------------------------------------------------------------------
+  # ● 设置角色的位图
+  #--------------------------------------------------------------------------
+  def set_character_bitmap
+    dir8_move_set_character_bitmap
+    return unless is_dir8?
+    sign = @character_name[/^[\!\$\@]./]
+    index = @character.character_index
+    @sw, @sh = self.bitmap.width, self.bitmap.height
+    default_bit = Bitmap.new(@sw, @sh)
+    dest_rect = Rect.new(0, 0, @sw, @sh / 4)
+    src_rect = Rect.new(0, 0, @sw, @sh / 4)
+    default_bit.stretch_blt(dest_rect, bitmap, src_rect)
+    dest_rect.y += @sh / 4;src_rect.y += @sh / 2
+    default_bit.stretch_blt(dest_rect, bitmap, src_rect)
+    dest_rect.y += @sh / 4;src_rect.y -= @sh / 4
+    default_bit.stretch_blt(dest_rect, bitmap, src_rect)
+    dest_rect.y += @sh / 4;src_rect.y += @sh / 2
+    default_bit.stretch_blt(dest_rect, bitmap, src_rect)
+    dashd4 = Cache.character(@character_name + DASH4_AFFIX) rescue self.bitmap
+    waitd4 = Cache.character(@character_name + WAIT4_AFFIX) rescue self.bitmap
+    dired8 = Cache.character(@character_name + DIRE8_AFFIX) rescue default_bit
+    dashd8 = Cache.character(@character_name + DASH8_AFFIX) rescue default_bit
+    waitd8 = Cache.character(@character_name + WAIT8_AFFIX) rescue default_bit
+    @character_dir8 = Bitmap.new(@sw * 4, @sh * 2)
+    dest_rect = Rect.new(0, 0, @sw, @sh)
+    @character_dir8.stretch_blt(dest_rect, bitmap, bitmap.rect)
+    dest_rect.x += @sw
+    @character_dir8.stretch_blt(dest_rect, dashd4, dashd4.rect)
+    dest_rect.x += @sw
+    @character_dir8.stretch_blt(dest_rect, waitd4, waitd4.rect)
+    dest_rect.y += @sh; dest_rect.x = 0
+    @character_dir8.stretch_blt(dest_rect, dired8, dired8.rect)
+    dest_rect.x += @sw
+    @character_dir8.stretch_blt(dest_rect, dashd8, dashd8.rect)
+    dest_rect.x += @sw
+    @character_dir8.stretch_blt(dest_rect, waitd8, waitd8.rect)
+    @cw = @character_dir8.width / 12
+    @ch = @character_dir8.height / 8
+    self.bitmap = @character_dir8
+    default_bit.dispose
   end
   #--------------------------------------------------------------------------
   # ● 更新源矩形
@@ -125,15 +201,24 @@ class Sprite_Character < Sprite_Base
     index = @character.character_index
     pattern = @character.pattern < 3 ? @character.pattern : 1
     index = if @character.is_dash? then 1
-    elsif @character.instance_of?(Game_Player) && $game_player.static_anime
+    elsif @character.static_anime
     2 else 0 end if is_dir8?
     sx = (index % 4 * 3 + pattern) * @cw
-    unless @character.direction.even?
+    if (dir = @character.direction).odd?
       index += 4 if is_dir8?
-      sy = (index / 4 * 4 + (@character.direction + 1) / 3) * @ch
+      dir = [3, 7].include?(dir) && !is_dir8? ? 10 - dir : dir
+      sy = (index / 4 * 4 + (dir + 1) / 3) * @ch
     else
-      sy = (index / 4 * 4 + (@character.direction - 2) / 2) * @ch
+      sy = (index / 4 * 4 + (dir - 2) / 2) * @ch
     end
     self.src_rect.set(sx, sy, @cw, @ch)
+  end
+  #--------------------------------------------------------------------------
+  # ● 释放
+  #--------------------------------------------------------------------------
+  alias dir8_dispose dispose
+  def dispose
+    dir8_dispose
+    @character_dir8.dispose if @character_dir8
   end
 end
