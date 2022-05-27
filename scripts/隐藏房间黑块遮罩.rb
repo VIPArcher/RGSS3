@@ -184,9 +184,8 @@ class Spriteset_Map
   #--------------------------------------------------------------------------
   alias black_room_create_characters create_characters
   def create_characters
-    old_map_id = @map_id # 兼容部分脚本 by：KB.Driver（日历的付丧神）
     black_room_create_characters
-    old_map_id != @map_id ? room_sprite_dispose : return if @black_room_sprites
+    room_sprite_dispose if @black_room_sprites
     create_black_rooms
   end
   #--------------------------------------------------------------------------
