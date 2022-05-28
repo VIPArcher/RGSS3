@@ -14,7 +14,7 @@
 #   在角色备注栏备注<add_equips:[h,i,j...n]> 追加初始装备（和上面是一样的意思，
 #   但是这种不会让数据库的设置无效，只会在后面追加上初始装备。）具体请自己摸索吧
 #==============================================================================
-$VIPArcherScript ||= {};$VIPArcherScript[:slot_type] = __FILE__ #20140803
+$VIPArcherScript ||= {};$VIPArcherScript[:slot_type] = __FILE__ #20150915
 #==============================================================================
 # ★ 设定部分 ★
 #==============================================================================
@@ -26,10 +26,10 @@ module VIPArcher
   0 => [0,1,2,3,4],    # 普通  
   1 => [0,0,2,3,4],    # 双持武器 （这两个是默认的风格）
   # 从这里开始添加装备风格
-  2 => [0,0,0,2,3,4,5],  # 看我索爷三刀流
-  3 => [4],            # 窝只是个需要保护的NPC装备只要首饰就够了吧。
+  2 => [0,0,0,1,2,3,4], # 看我索爷三刀流
+  3 => [4],             # 窝只是个需要保护的NPC装备只要首饰就够了吧。
   4 => [0,2,3,3],       # 233
-  5 => [0,1,2,3,4,5,6] # 这里的5,6对应的类型就是上面追加的类型
+  5 => [0,1,2,3,4,5,6], # 这里的5,6对应的类型就是上面追加的类型
   # 在这里继续添加类型。编号越大，优先级越高。
  
   } # <= 这个大括号不能删
@@ -51,11 +51,12 @@ class RPG::Actor < RPG::BaseItem
   alias vip_20141119_equips equips
   def equips
     add_equips = []
-    $1.split(",").each {|item|add_equips.push item.to_i} if
-    @note =~ /<(?:ini_equips|初始装备)[:]\[(.+?)\]>/i
-    return add_equips if add_equips != []
-    $1.split(",").each {|item|add_equips.push item.to_i} if
-    @note =~ /<(?:add_equips|追加初始装备)[:]\[(.+?)\]>/i
+    if @note =~ /<(?:ini_equips|初始装备)[:]\[(.+?)\]>/i
+      $1.split(",").each {|item|add_equips.push item.to_i}
+      return add_equips
+    elsif @note =~ /<(?:ini_equips|初始装备)[:]\[(.+?)\]>/i
+      $1.split(",").each {|item|add_equips.push item.to_i}
+    end
     vip_20141119_equips.clone + add_equips
   end
 end
@@ -65,7 +66,7 @@ class RPG::Armor < RPG::EquipItem
   # ● 装备类型
   #--------------------------------------------------------------------------
   def etype_id
-    return @note =~ /<(?:etype_id|装备类型)[:]\s*(.*)>/i ? $1.to_i : @etype_id
+    @note =~ /<(?:etype_id|装备类型)[:]\s*(.*)>/i ? $1.to_i : @etype_id
   end
 end
 #-------------------------------------------------------------------------------
@@ -102,15 +103,16 @@ class Game_BattlerBase
 end
 #-------------------------------------------------------------------------------
 class Game_Actor < Game_Battler
+  include VIPArcher
   #--------------------------------------------------------------------------
   # ● 初始化装备
   #     # 方法覆盖，可能引起冲突
   #--------------------------------------------------------------------------
   def init_equips(equips)
-    type_size = VIPArcher::SLOT_TYPE.values.max_by{|type|type.size}.size
+    type_size = SLOT_TYPE.values.max_by{|type|type.size}.size
     @equips = Array.new(type_size) { Game_BaseItem.new }
     equips.each_with_index do |item_id, i|
-      etype_id = index_to_etype_id(i)
+      etype_id = equip_slots[i]
       slot_id = empty_slot(etype_id)
       @equips[slot_id].set_equip(etype_id == 0, item_id) if slot_id
     end
@@ -121,56 +123,9 @@ class Game_Actor < Game_Battler
   #--------------------------------------------------------------------------
   alias vip_20140803_es equip_slots
   def equip_slots
-    return VIPArcher::SLOT_TYPE[slot_type] if 
-    VIPArcher::SLOT_TYPE[slot_type] != nil
+    return SLOT_TYPE[slot_type] unless SLOT_TYPE[slot_type].nil?
     vip_20140803_es
   end
 end
 #-------------------------------------------------------------------------------
-class Scene_Equip < Scene_MenuBase
-  #--------------------------------------------------------------------------
-  # ● 生成装备栏窗口
-  #--------------------------------------------------------------------------
-  alias slot_vip_create_slot_window create_slot_window
-  def create_slot_window
-    slot_vip_create_slot_window
-    @slot_window.create_contents
-    @slot_window.refresh
-  end
-  #--------------------------------------------------------------------------
-  # ● 物品“确定”
-  #--------------------------------------------------------------------------
-  alias slot_vip_on_item_ok on_item_ok
-  def on_item_ok
-    slot_vip_on_item_ok
-    @slot_window.create_contents
-    @slot_window.refresh
-  end
-  #--------------------------------------------------------------------------
-  # ● 指令“全部卸下”
-  #--------------------------------------------------------------------------
-  alias slot_vip_command_clear command_clear
-  def command_clear
-    slot_vip_command_clear
-    @slot_window.create_contents
-    @slot_window.refresh
-  end
-  #--------------------------------------------------------------------------
-  # ● 指令“最强装备”
-  #--------------------------------------------------------------------------
-  alias slot_vip_command_optimize command_optimize
-  def command_optimize
-    slot_vip_command_optimize
-    @slot_window.create_contents
-    @slot_window.refresh
-  end
-  #--------------------------------------------------------------------------
-  # ● 切换角色
-  #--------------------------------------------------------------------------
-  alias slot_vip_on_actor_change on_actor_change
-  def on_actor_change
-    slot_vip_on_actor_change
-    @slot_window.create_contents
-    @slot_window.refresh
-  end
-end
+class Window_EquipSlot; def refresh; create_contents; super end end
